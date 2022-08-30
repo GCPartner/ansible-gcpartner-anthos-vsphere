@@ -1,0 +1,4 @@
+---
+- hosts: esxi
+  roles:
+    - esxi

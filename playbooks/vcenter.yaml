@@ -1,0 +1,4 @@
+---
+- hosts: vcenter
+  roles:
+    - vcenter
