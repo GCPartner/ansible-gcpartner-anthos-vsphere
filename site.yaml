@@ -1,4 +1,4 @@
 ---
 - import_playbook: playbooks/bastion.yaml
-- import_playbook: playbooks/esxi.yaml
-- import_playbook: playbooks/vcenter.yaml
+#- import_playbook: playbooks/esxi.yaml
+#- import_playbook: playbooks/vcenter.yaml
