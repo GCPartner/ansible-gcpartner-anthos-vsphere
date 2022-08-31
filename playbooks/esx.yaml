@@ -1,0 +1,4 @@
+---
+- hosts: esx
+  roles:
+    - esx
