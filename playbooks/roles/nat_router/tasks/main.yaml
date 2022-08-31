@@ -1,0 +1,39 @@
+---
+- name: Install Google Cloud SDK pre-reqs
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+    pkg:
+    - dnsmasq
+    - iptables-persistent
+    - conntrack
+
+- name: Add "Routing parameters" to /etc/sysctl.conf
+  ansible.posix.sysctl:
+    sysctl_file: /etc/sysctl.conf
+    state: present
+    reload: yes
+  loop:
+    - { name: net.ipv4.conf.all.rp_filter, value: 0 }
+    - { name: net.ipv4.conf.default.rp_filter, value: 0 }
+    - { name: net.ipv4.ip_forward, value: 1 }
+    - { name: net.ipv4.tcp_mtu_probing, value: 2 }
+
+- name: Stop and Disable built in dns server
+  ansible.builtin.systemd:
+    name: systemd-resolved
+    state: stopped
+    enabled: no
+
+- name: Setup /etc/resolv.conf
+  ansible.builtin.copy:
+    dest: /etc/resolv.conf
+    content: |
+      nameserver 8.8.8.8
+      nameserver 8.8.4.4
+
+- name: Enable and Start dnsmasq service
+  ansible.builtin.systemd:
+    name: dnsmasq
+    state: started
+    enabled: yes

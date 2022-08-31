@@ -1,4 +1,5 @@
 ---
 - hosts: bastion
   roles:
-    - bastion
+    - gcp_cli
+    - nat_router
