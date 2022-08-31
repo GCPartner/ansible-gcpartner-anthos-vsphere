@@ -1,3 +1,8 @@
+- name: Install pyvmomi into the ansible (virtualenv)
+  ansible.builtin.pip:
+    name: pyvmomi
+    virtualenv: "{{ home_path }}/bootstrap/ansible"
+
 - name: Add Public VM Portgroup
   community.vmware.vmware_portgroup:
     hostname: "{{ item.0 }}"
@@ -6,7 +11,9 @@
     switch: "{{ vswitch_name }}"
     portgroup: "{{ pub_portgroup_name }}"
     vlan_id: "{{ pub_vlan_id }}"
-  delegate_to: localhost
+    hosts:
+     - "{{ item.0 }}"
+    validate_certs: false
   with_together:
         - "{{ groups['esx'] }}"
         - "{{ esx_passwords }}"
@@ -19,7 +26,9 @@
     switch: "{{ vswitch_name }}"
     portgroup: "{{ priv_portgroup_name }}"
     vlan_id: "{{ priv_vlan_id }}"
-  delegate_to: localhost
+    hosts:
+     - "{{ item.0 }}"
+    validate_certs: false
   with_together:
         - "{{ groups['esx'] }}"
         - "{{ esx_passwords }}"
