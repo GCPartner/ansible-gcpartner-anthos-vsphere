@@ -1,0 +1,25 @@
+- name: Add Public VM Portgroup
+  community.vmware.vmware_portgroup:
+    hostname: "{{ item.0 }}"
+    username: "{{ esx_username }}"
+    password: "{{ item.1 }}"
+    switch: "{{ vswitch_name }}"
+    portgroup: "{{ pub_portgroup_name }}"
+    vlan_id: "{{ pub_vlan_id }}"
+  delegate_to: localhost
+  with_together:
+        - "{{ groups['esx'] }}"
+        - "{{ esx_passwords }}"
+
+- name: Add Private VM Portgroup
+  community.vmware.vmware_portgroup:
+    hostname: "{{ item.0 }}"
+    username: "{{ esx_username }}"
+    password: "{{ item.1 }}"
+    switch: "{{ vswitch_name }}"
+    portgroup: "{{ priv_portgroup_name }}"
+    vlan_id: "{{ priv_vlan_id }}"
+  delegate_to: localhost
+  with_together:
+        - "{{ groups['esx'] }}"
+        - "{{ esx_passwords }}"

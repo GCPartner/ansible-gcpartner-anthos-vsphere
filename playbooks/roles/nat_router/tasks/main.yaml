@@ -13,6 +13,8 @@
     sysctl_file: /etc/sysctl.conf
     state: present
     reload: yes
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
   loop:
     - { name: net.ipv4.conf.all.rp_filter, value: 0 }
     - { name: net.ipv4.conf.default.rp_filter, value: 0 }

@@ -3,3 +3,4 @@
   roles:
     - gcp_cli
     - nat_router
+    - esx
