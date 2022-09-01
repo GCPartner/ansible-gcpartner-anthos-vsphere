@@ -1,0 +1,6 @@
+---
+- name: Reload NFS Exports
+  ansible.builtin.systemd:
+    name: nfs-server.service
+    daemon_reload: yes
+    state: reloaded

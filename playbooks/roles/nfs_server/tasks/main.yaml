@@ -1,0 +1,97 @@
+---
+- name: Create Facts Dir
+  ansible.builtin.file:
+    path: /etc/ansible/facts.d
+    state: directory
+    mode: '0755'
+
+- name: Check that the nfs_disk.fact exisits
+  ansible.builtin.stat:
+    path: /etc/ansible/facts.d/nfs_disk.fact
+  register: disk_fact
+
+- name: Find unused disk
+  community.general.ini_file:
+    path: /etc/ansible/facts.d/nfs_disk.fact
+    section: general
+    option: disk_path
+    value: "/dev/{{ item.key }}"
+  when:
+  - not disk_fact.stat.exists
+  - not item.value.partitions
+  - not item.value.holders
+  - item.key is not search ("loop")
+  - item.key is not search ("dm")
+  with_dict: "{{ ansible_devices }}"
+
+- name: Re-read facts after adding nfs_disk fact
+  ansible.builtin.setup:
+    filter: ansible_local
+
+- name: Create a new xfs primary partition
+  community.general.parted:
+    device: "{{ ansible_local['nfs_disk']['general']['disk_path'] }}"
+    number: 1
+    state: present
+    fs_type: xfs
+  register: partition_created
+
+- name: Create fact for part_path if nvme
+  community.general.ini_file:
+    path: /etc/ansible/facts.d/nfs_disk.fact
+    section: general
+    option: part_path
+    value: "{{ ansible_local['nfs_disk']['general']['disk_path'] }}p1"
+  when:
+  - ansible_local['nfs_disk']['general']['disk_path'] is search ("nvme")
+
+- name: Create fact for part_path if not nvme
+  community.general.ini_file:
+    path: /etc/ansible/facts.d/nfs_disk.fact
+    section: general
+    option: part_path
+    value: "{{ ansible_local['nfs_disk']['general']['disk_path'] }}1"
+  when:
+  - ansible_local['nfs_disk']['general']['disk_path'] is not search ("nvme")
+
+- name: Re-read facts after adding part_path fact
+  ansible.builtin.setup:
+    filter: ansible_local
+
+- name: Create NFS Dir
+  ansible.builtin.file:
+    path: /nfs
+    state: directory
+    mode: '0755'
+
+- name: Create a xfs filesystem on NFS Partition
+  community.general.filesystem:
+    fstype: xfs
+    dev: "{{ ansible_local['nfs_disk']['general']['part_path'] }}"
+
+- name: Mount disk to nfs path
+  ansible.posix.mount:
+    path: /nfs
+    src: "{{ ansible_local['nfs_disk']['general']['part_path'] }}"
+    fstype: xfs
+    state: mounted
+
+- name: Create ESX NFS Dir
+  ansible.builtin.file:
+    path: /nfs/esx
+    state: directory
+    mode: '0755'
+
+- name: Install NFS Server
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+    pkg:
+    - nfs-kernel-server
+
+- name: Create /etc/exports
+  ansible.builtin.copy:
+    dest: /etc/exports
+    content: |
+      /nfs/esx          {{ priv_cidr }}(rw,sync,no_root_squash,no_subtree_check)
+  notify: Reload NFS Exports
