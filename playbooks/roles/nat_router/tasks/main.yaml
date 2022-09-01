@@ -1,5 +1,5 @@
 ---
-- name: Install Google Cloud SDK pre-reqs
+- name: Install packages for routing
   ansible.builtin.apt:
     update_cache: yes
     cache_valid_time: 3600
@@ -39,3 +39,5 @@
     name: dnsmasq
     state: started
     enabled: yes
+
+# TODO: Add iptables rules for NAT and Routing

@@ -95,3 +95,6 @@
     content: |
       /nfs/esx          {{ priv_cidr }}(rw,sync,no_root_squash,no_subtree_check)
   notify: Reload NFS Exports
+
+- name: Force all notified handlers to run now
+  meta: flush_handlers

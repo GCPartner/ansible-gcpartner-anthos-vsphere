@@ -32,3 +32,5 @@
   with_together:
         - "{{ groups['esx'] }}"
         - "{{ esx_passwords }}"
+
+# TODO: Add NFS datastore
