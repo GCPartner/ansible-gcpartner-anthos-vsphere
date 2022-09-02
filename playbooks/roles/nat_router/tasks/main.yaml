@@ -40,4 +40,12 @@
     state: started
     enabled: yes
 
-# TODO: Add iptables rules for NAT and Routing
+- name: NAT traffic from Private Net out Public Interface
+  ansible.builtin.iptables:
+    table: nat
+    chain: POSTROUTING
+    out_interface: "bond0.{{ pub_vlan_id }}"
+    jump: MASQUERADE
+    source: "{{ priv_cidr }}"
+    comment: "NAT traffic from {{ priv_cidr }} out bond0.{{ pub_vlan_id }}"
+  notify: Save IPV4 NAT Table

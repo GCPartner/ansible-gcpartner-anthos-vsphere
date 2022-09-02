@@ -5,3 +5,5 @@
     - nat_router
     - nfs_server
     - esx
+    - vcenter
+

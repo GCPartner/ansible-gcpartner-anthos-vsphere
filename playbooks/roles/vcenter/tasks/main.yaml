@@ -1,0 +1,14 @@
+- name: Download vCenter ISO
+  ansible.builtin.shell:
+    chdir: '{{ home_path }}/bootstrap'
+    cmd: gcloud auth activate-service-account --key-file={{ home_path }}/bootstrap/gcp_keys/master_sa_key.json
+      && gsutil cp gs://{{ object_store_bucket_name }}/{{ vcenter_iso_name}} .
+    creates: "{{ home_path }}/bootstrap/{{ vcenter_iso_name}}"
+
+#TODO: Mount the vCenter ISO
+#      Create a vCenter Deployment Template
+#      Deploy vCenter
+#      Create Datacenter
+#      Create Cluster
+#      Add all hosts
+#      Configure vSan (Maybe)

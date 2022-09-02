@@ -33,4 +33,18 @@
         - "{{ groups['esx'] }}"
         - "{{ esx_passwords }}"
 
-# TODO: Add NFS datastore
+- name: Mount NFS v4.1 datastore
+  community.vmware.vmware_host_datastore:
+    hostname: "{{ item.0 }}"
+    username: "{{ esx_username }}"
+    password: "{{ item.1 | b64decode }}"
+    datastore_name: "NFS"
+    datastore_type: "nfs41"
+    nfs_server:  "{{ priv_cidr | ansible.utils.nthhost('1') }}" 
+    nfs_path: "/nfs/esx"
+    nfs_ro: no
+    state: present
+    validate_certs: false
+  with_together:
+        - "{{ groups['esx'] }}"
+        - "{{ esx_passwords }}"
