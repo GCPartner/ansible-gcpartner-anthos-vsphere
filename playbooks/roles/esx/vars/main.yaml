@@ -1,5 +1,2 @@
 ---
-esx_username: root
 vswitch_name: vSwitch0
-priv_portgroup_name: private
-pub_portgroup_name: public

@@ -60,7 +60,7 @@
 
 - name: Create NFS Dir
   ansible.builtin.file:
-    path: /nfs
+    path: "{{ nfs_root }}"
     state: directory
     mode: '0755'
 
@@ -71,14 +71,14 @@
 
 - name: Mount disk to nfs path
   ansible.posix.mount:
-    path: /nfs
+    path: "{{ nfs_root }}"
     src: "{{ ansible_local['nfs_disk']['general']['part_path'] }}"
     fstype: xfs
     state: mounted
 
 - name: Create ESX NFS Dir
   ansible.builtin.file:
-    path: /nfs/esx
+    path: "{{ nfs_root }}/{{ nfs_esx_dir }}"
     state: directory
     mode: '0755'
 
@@ -93,7 +93,7 @@
   ansible.builtin.copy:
     dest: /etc/exports
     content: |
-      /nfs/esx          {{ priv_cidr }}(rw,sync,no_root_squash,no_subtree_check)
+      {{ nfs_root }}/{{ nfs_esx_dir }}          {{ priv_cidr }}(rw,sync,no_root_squash,no_subtree_check)
   notify: Reload NFS Exports
 
 - name: Force all notified handlers to run now

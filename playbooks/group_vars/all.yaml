@@ -1,0 +1,14 @@
+---
+special_chars: "!@^*?.,-_+"
+esx_username: "root"
+vswitch_name: vSwitch0
+priv_portgroup_name: private
+pub_portgroup_name: public
+bastion_host_private_ip: "{{ priv_cidr | ansible.utils.nthhost('1') }}"
+private_gateway_address: "{{ priv_cidr | ansible.utils.nthhost('1') }}"
+public_gateway_address: "{{ pub_cidr | ansible.utils.nthhost('1') }}"
+nfs_root: "/nfs"
+nfs_esx_dir: "esx"
+nfs_datastore_name: "NFS"
+vcenter_ip: "{{ priv_cidr | ansible.utils.nthhost('2') }}"
+vcenter_network_prefix_length: "{{ priv_cidr | ansible.utils.ipaddr('prefix') }}"

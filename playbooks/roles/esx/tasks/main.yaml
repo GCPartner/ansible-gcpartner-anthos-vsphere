@@ -38,10 +38,10 @@
     hostname: "{{ item.0 }}"
     username: "{{ esx_username }}"
     password: "{{ item.1 | b64decode }}"
-    datastore_name: "NFS"
+    datastore_name: "{{ nfs_datastore_name }}"
     datastore_type: "nfs41"
-    nfs_server:  "{{ priv_cidr | ansible.utils.nthhost('1') }}" 
-    nfs_path: "/nfs/esx"
+    nfs_server:  "{{ bastion_host_private_ip }}"
+    nfs_path: "{{ nfs_root }}/{{ nfs_esx_dir }}"
     nfs_ro: no
     state: present
     validate_certs: false

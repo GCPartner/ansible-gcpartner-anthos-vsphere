@@ -1,0 +1,42 @@
+{
+    "__version": "2.13.0",
+    "new_vcsa": {
+        "esxi": {
+            "hostname": "{{ esx_host_ip }}",
+            "username": "{{ esx_username }}",
+            "password": "{{ esx_password }}",
+            "deployment_network": "{{ esx_network }}",
+            "datastore": "{{ esx_datastore }}"
+        },
+        "appliance": {
+            "thin_disk_mode": true,
+            "deployment_option": "small",
+            "name": "vcsa"
+        },
+        "network": {
+            "ip_family": "ipv4",
+            "mode": "static",
+            "system_name": "{{ vcenter_ip }}",
+            "ip": "{{ vcenter_ip }}",
+            "prefix": "{{ network_prefix_length }}",
+            "gateway": "{{ vcenter_gateway }}",
+            "dns_servers": [
+                "{{ bastion_host_private_ip }}"
+            ]
+        },
+        "os": {
+            "password": "{{ vcenter_os_password }}",
+            "ntp_servers": "time.nist.gov",
+            "ssh_enable": true
+        },
+        "sso": {
+            "password": "{{ vcenter_sso_password }}",
+            "domain_name": "vsphere.local"
+        }
+    },
+    "ceip": {
+        "settings": {
+            "ceip_enabled": false
+        }
+    }
+}
