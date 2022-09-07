@@ -19,6 +19,7 @@
   with_dict:
   - vcenter_os_password: "{{ lookup('community.general.random_string', min_lower=1, min_upper=1, min_numeric=1, min_special=1, override_special=special_chars, length=16) }}"
   - vcenter_sso_password: "{{ lookup('community.general.random_string', min_lower=1, min_upper=1, min_numeric=1, min_special=1, override_special=special_chars, length=16) }}"
+  - vcenter_sso_username: "Administrator@{{ vcenter_domain }}"
   when:
   - not vcenter_fact.stat.exists
 
@@ -59,10 +60,45 @@
     src: vcva_install.j2"
     dest: "{{ home_path }}/bootstrap/vcva_install.json"
 
-#TODO: Mount the vCenter ISO
-#      Create a vCenter Deployment Template
-#      Deploy vCenter
-#      Create Datacenter
-#      Create Cluster
-#      Add all hosts
-#      Configure vSan (Maybe)
+- name: Deploy vCenter
+  ansible.builtin.shell:
+    chdir: '{{ home_path }}/bootstrap'
+    cmd: "/mnt/vcsa-cli-installer/lin64/vcsa-deploy install --accept-eula --no-ssl-certificate-verification {{ home_path }}/bootstrap/vcva_install.json"
+  when:
+  - ansible_local['vcenter_deployed']['general']['vcenter_deployed'] is not true
+  notify: Create vCenter Deployed Fact
+
+- name: Create Datacenter
+  community.vmware.vmware_datacenter:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_username'] }}"
+    password: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_password'] }}"
+    validate_certs: false
+    datacenter_name: "{{ vcenter_datacenter_name }}"
+    state: present
+
+- name: Create Cluster
+  community.vmware.vmware_cluster:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_username'] }}"
+    password: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_password'] }}"
+    validate_certs: false
+    datacenter_name: "{{ vcenter_datacenter_name }}"
+    cluster_name: "{{ vcenter_cluster_name }}"
+
+- name: Add ESXi Host to vCenter
+  community.vmware.vmware_host:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_username'] }}"
+    password: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_password'] }}"
+    validate_certs: false
+    datacenter: "{{ vcenter_datacenter_name }}"
+    cluster: "{{ vcenter_cluster_name }}"
+    esxi_hostname: "{{ item.0 }}"
+    esxi_username: "{{ esx_username }}"
+    esxi_password: "{{ item.1 | b64decode }}"
+    fetch_ssl_thumbprint: false
+    state: present
+  with_together:
+        - "{{ groups['esx'] }}"
+        - "{{ esx_passwords }}"
