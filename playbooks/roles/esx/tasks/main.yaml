@@ -40,22 +40,6 @@
   - "{{ groups['esx'] }}"
   - "{{ esx_passwords }}"
 
-- name: Mount NFS v4.1 datastore
-  community.vmware.vmware_host_datastore:
-    hostname: "{{ item.0 }}"
-    username: "{{ esx_username }}"
-    password: "{{ item.1 | b64decode }}"
-    datastore_name: "{{ nfs_datastore_name }}"
-    datastore_type: "nfs41"
-    nfs_server:  "{{ bastion_host_private_ip }}"
-    nfs_path: "{{ nfs_root }}/{{ nfs_esx_dir }}"
-    nfs_ro: no
-    state: present
-    validate_certs: false
-  with_together:
-  - "{{ groups['esx'] }}"
-  - "{{ esx_passwords }}"
-
 - name: Update the default TCP/IP stack configuration
   community.vmware.vmware_host_tcpip_stacks:
     hostname: "{{ item.0 }}"
@@ -97,6 +81,22 @@
     enable_vmotion: True
     enable_vsan: True
     validate_certs: False
+  with_together:
+  - "{{ groups['esx'] }}"
+  - "{{ esx_passwords }}"
+
+- name: Mount NFS v4.1 datastore
+  community.vmware.vmware_host_datastore:
+    hostname: "{{ item.0 }}"
+    username: "{{ esx_username }}"
+    password: "{{ item.1 | b64decode }}"
+    datastore_name: "{{ nfs_datastore_name }}"
+    datastore_type: "nfs41"
+    nfs_server:  "{{ bastion_host_private_ip }}"
+    nfs_path: "{{ nfs_root }}/{{ nfs_esx_dir }}"
+    nfs_ro: no
+    state: present
+    validate_certs: false
   with_together:
   - "{{ groups['esx'] }}"
   - "{{ esx_passwords }}"
