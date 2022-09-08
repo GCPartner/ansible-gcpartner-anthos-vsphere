@@ -19,7 +19,7 @@
       cloud-sdk main
     state: present
 
-- name: Install Google Cloud SDK
+- name: Install Google Cloud SDK (Takes a few minutes)
   ansible.builtin.apt:
     update_cache: yes
     cache_valid_time: 3600

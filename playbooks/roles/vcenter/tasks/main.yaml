@@ -61,13 +61,21 @@
     src: vcva_install.j2
     dest: "{{ home_path }}/bootstrap/vcva_install.json"
 
+- name: Check if vcenter_deployed Fact exists
+  ansible.builtin.stat:
+    path: /etc/ansible/facts.d/vcenter_deployed.fact
+  register: vcenter_deployed_fact
+
 - name: Deploy vCenter (This takes a few minutes)
   ansible.builtin.shell:
     chdir: '{{ home_path }}/bootstrap'
     cmd: "/mnt/vcsa-cli-installer/lin64/vcsa-deploy install --accept-eula --no-ssl-certificate-verification {{ home_path }}/bootstrap/vcva_install.json"
   when:
-  - not ansible_local['vcenter_deployed']['general']['vcenter_deployed']
+  - not vcenter_deployed_fact.stat.exists
   notify: Create vCenter Deployed Fact
+
+- name: Force all notified handlers to run now
+  meta: flush_handlers
 
 - name: Create Datacenter
   community.vmware.vmware_datacenter:
