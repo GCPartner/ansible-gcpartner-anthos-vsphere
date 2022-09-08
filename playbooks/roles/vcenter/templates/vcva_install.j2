@@ -2,11 +2,11 @@
     "__version": "2.13.0",
     "new_vcsa": {
         "esxi": {
-            "hostname": "{{ esx_host_ip }}",
+            "hostname": "{{ groups['esx'][0] }}",
             "username": "{{ esx_username }}",
-            "password": "{{ esx_password }}",
-            "deployment_network": "{{ esx_network }}",
-            "datastore": "{{ esx_datastore }}"
+            "password": "{{ esx_passwords[0] | b64decode }}",
+            "deployment_network": "{{ vcenter_port_group_name }}",
+            "datastore": "{{ nfs_datastore_name }}"
         },
         "appliance": {
             "thin_disk_mode": true,
@@ -18,19 +18,19 @@
             "mode": "static",
             "system_name": "{{ vcenter_ip }}",
             "ip": "{{ vcenter_ip }}",
-            "prefix": "{{ network_prefix_length }}",
-            "gateway": "{{ vcenter_gateway }}",
+            "prefix": "{{ vcenter_network_prefix_length }}",
+            "gateway": "{{ private_gateway_address }}",
             "dns_servers": [
                 "{{ bastion_host_private_ip }}"
             ]
         },
         "os": {
-            "password": "{{ vcenter_os_password }}",
+            "password": "{{ ansible_local['vcenter_auth']['general']['vcenter_os_password'] }}",
             "ntp_servers": "time.nist.gov",
             "ssh_enable": true
         },
         "sso": {
-            "password": "{{ vcenter_sso_password }}",
+            "password": "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_password'] }}",
             "domain_name": "{{ vcenter_domain }}"
         }
     },

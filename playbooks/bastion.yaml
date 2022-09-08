@@ -4,6 +4,7 @@
     - gcp_cli
     - nat_router
     - nfs_server
+    - pyvmomi
     - esx
     - vcenter
 

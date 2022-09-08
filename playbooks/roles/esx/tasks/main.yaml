@@ -1,7 +1,14 @@
-- name: Install pyvmomi into the ansible (virtualenv)
-  ansible.builtin.pip:
-    name: pyvmomi
-    virtualenv: "{{ home_path }}/bootstrap/ansible"
+---
+- name: Gather esx host facts
+  community.vmware.vmware_host_facts:
+    hostname: "{{ item.0 }}"
+    username: "{{ esx_username }}"
+    password: "{{ item.1 | b64decode }}"
+    validate_certs: false
+  with_together:
+  - "{{ groups['esx'] }}"
+  - "{{ esx_passwords }}"
+  register: esx_host_facts
 
 - name: Add Public VM Portgroup
   community.vmware.vmware_portgroup:
@@ -15,8 +22,8 @@
      - "{{ item.0 }}"
     validate_certs: false
   with_together:
-        - "{{ groups['esx'] }}"
-        - "{{ esx_passwords }}"
+  - "{{ groups['esx'] }}"
+  - "{{ esx_passwords }}"
 
 - name: Add Private VM Portgroup
   community.vmware.vmware_portgroup:
@@ -30,8 +37,8 @@
      - "{{ item.0 }}"
     validate_certs: false
   with_together:
-        - "{{ groups['esx'] }}"
-        - "{{ esx_passwords }}"
+  - "{{ groups['esx'] }}"
+  - "{{ esx_passwords }}"
 
 - name: Mount NFS v4.1 datastore
   community.vmware.vmware_host_datastore:
@@ -46,5 +53,50 @@
     state: present
     validate_certs: false
   with_together:
-        - "{{ groups['esx'] }}"
-        - "{{ esx_passwords }}"
+  - "{{ groups['esx'] }}"
+  - "{{ esx_passwords }}"
+
+- name: Update the default TCP/IP stack configuration
+  community.vmware.vmware_host_tcpip_stacks:
+    hostname: "{{ item.0 }}"
+    username: "{{ esx_username }}"
+    password: "{{ item.1 | b64decode }}"
+    validate_certs: False
+    esxi_hostname: "{{ item.2['ansible_facts']['ansible_hostname'] }}"
+    default:
+      hostname: '{{ cluster_name }}-esx{{ "%02d" | format(index + 1) }}'
+      domain: vsphere.local
+      preferred_dns: 8.8.8.8
+      alternate_dns: 8.8.4.4
+      search_domains:
+      - vsphere.local
+      gateway: "{{ private_gateway_address }}"
+  with_together:
+  - "{{ groups['esx'] }}"
+  - "{{ esx_passwords }}"
+  - "{{ esx_host_facts['results'] }}"
+  loop_control:
+    index_var: index
+
+- name: Update Management vmkernel port to enable vMotion & vSan
+  community.vmware.vmware_vmkernel:
+    hostname: "{{ item.0 }}"
+    username: "{{ esx_username }}"
+    password: "{{ item.1 | b64decode }}"
+    esxi_hostname: "{{ item.0 }}"
+    vswitch_name: "{{ vswitch_name }}"
+    portgroup_name: "{{ priv_portgroup_name }}.{{ priv_vlan_id }}"
+    state: present
+    device: vmk0
+    mtu: 9000
+    network:
+      type: 'static'
+      ip_address: "{{ item.0 }}"
+      subnet_mask: "{{ private_net_subnet }}"
+    enable_mgmt: True
+    enable_vmotion: True
+    enable_vsan: True
+    validate_certs: False
+  with_together:
+  - "{{ groups['esx'] }}"
+  - "{{ esx_passwords }}"

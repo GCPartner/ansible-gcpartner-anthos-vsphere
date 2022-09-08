@@ -20,6 +20,7 @@
   - vcenter_os_password: "{{ lookup('community.general.random_string', min_lower=1, min_upper=1, min_numeric=1, min_special=1, override_special=special_chars, length=16) }}"
   - vcenter_sso_password: "{{ lookup('community.general.random_string', min_lower=1, min_upper=1, min_numeric=1, min_special=1, override_special=special_chars, length=16) }}"
   - vcenter_sso_username: "Administrator@{{ vcenter_domain }}"
+  - vcenter_ip_address: "{{ groups['vcenter'][0] }}"
   when:
   - not vcenter_fact.stat.exists
 
@@ -27,7 +28,7 @@
   ansible.builtin.setup:
     filter: ansible_local
 
-- name: Download vCenter ISO via GCS
+- name: Download vCenter ISO via GCS (This takes a few minutes)
   ansible.builtin.shell:
     chdir: '{{ home_path }}/bootstrap'
     cmd: gcloud auth activate-service-account --key-file={{ home_path }}/bootstrap/gcp_keys/master_sa_key.json
@@ -35,7 +36,7 @@
     creates: "{{ home_path }}/bootstrap/{{ vcenter_iso_name}}"
   when: object_store_api == 'gcs'
 
-- name: Download vCenter ISO via S3
+- name: Download vCenter ISO via S3 (This takes a few minutes)
   amazon.aws.aws_s3:
     bucket: "{{ object_store_bucket_name }}"
     object: "{{ vcenter_iso_name}}"
@@ -47,7 +48,7 @@
     validate_certs: false
   when: object_store_api == 's3'
 
-- name: Mount vCenter ISO read-only
+- name: Mount vCenter ISO to /mnt
   ansible.posix.mount:
     path: /mnt
     src: "{{ home_path }}/bootstrap/{{ vcenter_iso_name}}"
@@ -55,22 +56,22 @@
     state: mounted
     opts: exec
 
-- name: Template out the VCVA_a file to /etc/file.conf
+- name: Template out the vcva_install.j2 file to vcva_install.json
   ansible.builtin.template:
-    src: vcva_install.j2"
+    src: vcva_install.j2
     dest: "{{ home_path }}/bootstrap/vcva_install.json"
 
-- name: Deploy vCenter
+- name: Deploy vCenter (This takes a few minutes)
   ansible.builtin.shell:
     chdir: '{{ home_path }}/bootstrap'
     cmd: "/mnt/vcsa-cli-installer/lin64/vcsa-deploy install --accept-eula --no-ssl-certificate-verification {{ home_path }}/bootstrap/vcva_install.json"
   when:
-  - ansible_local['vcenter_deployed']['general']['vcenter_deployed'] is not true
+  - not ansible_local['vcenter_deployed']['general']['vcenter_deployed']
   notify: Create vCenter Deployed Fact
 
 - name: Create Datacenter
   community.vmware.vmware_datacenter:
-    hostname: "{{ vcenter_hostname }}"
+    hostname: "{{ ansible_local['vcenter_auth']['general']['vcenter_ip_address'] }}"
     username: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_username'] }}"
     password: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_password'] }}"
     validate_certs: false
@@ -79,7 +80,7 @@
 
 - name: Create Cluster
   community.vmware.vmware_cluster:
-    hostname: "{{ vcenter_hostname }}"
+    hostname: "{{ ansible_local['vcenter_auth']['general']['vcenter_ip_address'] }}"
     username: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_username'] }}"
     password: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_password'] }}"
     validate_certs: false
@@ -88,7 +89,7 @@
 
 - name: Add ESXi Host to vCenter
   community.vmware.vmware_host:
-    hostname: "{{ vcenter_hostname }}"
+    hostname: "{{ ansible_local['vcenter_auth']['general']['vcenter_ip_address'] }}"
     username: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_username'] }}"
     password: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_password'] }}"
     validate_certs: false
@@ -97,8 +98,42 @@
     esxi_hostname: "{{ item.0 }}"
     esxi_username: "{{ esx_username }}"
     esxi_password: "{{ item.1 | b64decode }}"
-    fetch_ssl_thumbprint: false
+    fetch_ssl_thumbprint: true
     state: present
   with_together:
         - "{{ groups['esx'] }}"
         - "{{ esx_passwords }}"
+
+- name: Enable HA and VM monitoring without admission control
+  community.vmware.vmware_cluster_ha:
+    hostname: "{{ ansible_local['vcenter_auth']['general']['vcenter_ip_address'] }}"
+    username: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_username'] }}"
+    password: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_password'] }}"
+    validate_certs: False
+    datacenter_name: "{{ vcenter_datacenter_name }}"
+    cluster_name: "{{ vcenter_cluster_name }}"
+    enable: True
+    ha_vm_monitoring: vmMonitoringOnly
+
+- name: Enable DRS
+  community.vmware.vmware_cluster_drs:
+    hostname: "{{ ansible_local['vcenter_auth']['general']['vcenter_ip_address'] }}"
+    username: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_username'] }}"
+    password: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_password'] }}"
+    validate_certs: False
+    datacenter_name: "{{ vcenter_datacenter_name }}"
+    cluster_name: "{{ vcenter_cluster_name }}"
+    enable: true
+
+- name: Enable vMotion rule set for all ESXi Host in given Cluster
+  community.vmware.vmware_host_firewall_manager:
+    hostname: "{{ ansible_local['vcenter_auth']['general']['vcenter_ip_address'] }}"
+    username: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_username'] }}"
+    password: "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_password'] }}"
+    validate_certs: False
+    cluster_name: "{{ vcenter_cluster_name }}"
+    rules:
+        - name: vMotion
+          enabled: True
+          allowed_hosts:
+            all_ip: True

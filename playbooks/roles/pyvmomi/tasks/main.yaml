@@ -1,0 +1,5 @@
+---
+- name: Install pyvmomi into the ansible (virtualenv)
+  ansible.builtin.pip:
+    name: pyvmomi
+    virtualenv: "{{ virtualenv_path }}"

@@ -48,4 +48,4 @@
     jump: MASQUERADE
     source: "{{ priv_cidr }}"
     comment: "NAT traffic from {{ priv_cidr }} out bond0.{{ pub_vlan_id }}"
-  notify: Save IPV4 NAT Table
+  notify: Save IPv4 NAT Table
