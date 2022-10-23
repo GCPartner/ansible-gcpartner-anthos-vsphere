@@ -1,0 +1,23 @@
+---
+- name: Create Facts Dir
+  ansible.builtin.file:
+    path: /etc/ansible/facts.d
+    state: directory
+    mode: '0755'
+  listen: Create vCenter Deployed Fact
+
+- name: Check if vcenter_deployed Fact exists
+  ansible.builtin.stat:
+    path: /etc/ansible/facts.d/vcenter_deployed.fact
+  register: vcenter_deployed
+  listen: Create vCenter Deployed Fact
+
+- name: Create vcenter_deployed fact file
+  community.general.ini_file:
+    path: /etc/ansible/facts.d/vcenter_deployed.fact
+    section: general
+    option: vcenter_deployed
+    value: true
+  when:
+  - not vcenter_deployed.stat.exists
+  listen: Create vCenter Deployed Fact

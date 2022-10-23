@@ -1,0 +1,42 @@
+{
+    "__version": "2.13.0",
+    "new_vcsa": {
+        "esxi": {
+            "hostname": "{{ groups['esx'][0] }}",
+            "username": "{{ esx_username }}",
+            "password": "{{ esx_passwords[0] | b64decode }}",
+            "deployment_network": "{{ vcenter_port_group_name }}",
+            "datastore": "{{ nfs_datastore_name }}"
+        },
+        "appliance": {
+            "thin_disk_mode": true,
+            "deployment_option": "small",
+            "name": "vcsa"
+        },
+        "network": {
+            "ip_family": "ipv4",
+            "mode": "static",
+            "system_name": "{{ vcenter_ip }}",
+            "ip": "{{ vcenter_ip }}",
+            "prefix": "{{ vcenter_network_prefix_length }}",
+            "gateway": "{{ private_gateway_address }}",
+            "dns_servers": [
+                "{{ bastion_host_private_ip }}"
+            ]
+        },
+        "os": {
+            "password": "{{ ansible_local['vcenter_auth']['general']['vcenter_os_password'] }}",
+            "ntp_servers": "time.nist.gov",
+            "ssh_enable": true
+        },
+        "sso": {
+            "password": "{{ ansible_local['vcenter_auth']['general']['vcenter_sso_password'] }}",
+            "domain_name": "{{ vcenter_domain }}"
+        }
+    },
+    "ceip": {
+        "settings": {
+            "ceip_enabled": false
+        }
+    }
+}

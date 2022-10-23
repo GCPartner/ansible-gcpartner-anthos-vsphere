@@ -1,0 +1,22 @@
+---
+#TODO: We should distribute these to their proper roles... And probably make
+#      them more dynamic so that we can support public ESXi hosts and/or vcenter
+
+# Keep All
+esx_username: "root"
+bastion_host_private_ip: "{{ priv_cidr | ansible.utils.nthhost('1') }}"
+private_gateway_address: "{{ priv_cidr | ansible.utils.nthhost('1') }}"
+public_gateway_address: "{{ pub_cidr | ansible.utils.nthhost('1') }}"
+nfs_root: "/nfs"
+nfs_esx_dir: "esx"
+nfs_datastore_name: "NFS"
+# ESX
+priv_portgroup_name: private
+pub_portgroup_name: public
+private_net_subnet: "{{ priv_cidr | ansible.utils.ipaddr('netmask') }}"
+public_net_subnet: "{{ pub_cidr | ansible.utils.ipaddr('netmask') }}"
+# vCenter
+special_chars: "!@^*?.,-_+"
+vcenter_ip: "{{ priv_cidr | ansible.utils.nthhost('2') }}"
+vcenter_network_prefix_length: "{{ priv_cidr | ansible.utils.ipaddr('prefix') }}"
+vcenter_port_group_name: private

@@ -1,0 +1,5 @@
+- name: Save IPv4 NAT Table
+  community.general.iptables_state:
+    ip_version: ipv4
+    state: saved
+    path: /etc/iptables/rules.v4
